@@ -319,14 +319,17 @@ describe 'Derived Products' do
             'multi-entitlement' => "yes"
         }
     })
+
+    derived_eng_product = create_upstream_product(random_string(nil, true))
+
     derived_product = create_upstream_product(random_string('derived_prod'), {
         :attributes => {
             :cores => 2,
             :sockets=>4
-        }
+        }, :providedProducts => [derived_eng_product]
     })
 
-    derived_eng_product = create_upstream_product(random_string(nil, true))
+
     derived_content = create_upstream_content("twentyTwo", {
         :type => "yum",
         :label => "teardropsOnMyGuitar",
@@ -334,6 +337,7 @@ describe 'Derived Products' do
         :vendor => "fifteen",
         :releaseVer => nil
     })
+
     add_content_to_product_upstream(derived_eng_product.id, derived_content.id)
 
     sub = create_upstream_subscription(random_string('dc_sub'), @owner_key, datacenter_product.id, {

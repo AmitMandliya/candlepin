@@ -140,6 +140,7 @@ module HostedTest
       product[:attributes] = params[:attributes] if params[:attributes]
       product[:dependentProductIds] = params[:dependentProductIds] if params[:dependentProductIds]
       product[:relies_on] = params[:relies_on] if params[:relies_on]
+      product[:providedProducts] = params[:providedProducts] if params[:providedProducts]
 
       @cp.put("/hostedtest/products/#{product_id}", {}, product)
     else

@@ -60,15 +60,52 @@ describe 'Refresh Pools' do
     owner_key = random_string('test_owner')
     owner = create_owner(owner_key)
 
-    product = create_upstream_product(random_string('test_prod'))
     provided = []
 
     3.times do |i|
       provided << create_upstream_product(random_string("provided-#{i}"))
     end
 
+    product = create_upstream_product(random_string('test_prod'), :providedProducts => provided[0..1])
     sub = create_upstream_subscription(random_string('test_sub'), owner_key, product.id, {
       :provided_products => provided[0..1]
+    })
+
+    @cp.refresh_pools(owner_key)
+    pools = @cp.list_pools({:owner => owner.id})
+    expect(pools.length).to eq(1)
+    expect(pools[0].providedProducts.length).to eq(2)
+
+    provided_ids = provided[0..1].collect { |p| p.id }
+    pools[0].providedProducts.each do |p|
+      expect(provided_ids).to include(p.productId)
+      provided_ids.delete(p.productId)
+    end
+
+    # Remove the old provided products and add a new one...
+    sub.providedProducts = [provided[2]]
+    update_upstream_subscription(sub.id, sub)
+    update_upstream_product(product.id, :provided_products => provided[2])
+
+    @cp.refresh_pools(owner_key)
+    pools = @cp.list_pools({:owner => owner.id})
+    expect(pools.length).to eq(1)
+    expect(pools[0].providedProducts.length).to eq(1)
+    expect(pools[0].providedProducts[0].productId).to eq(provided[2].id)
+  end
+
+  it 'detects changes in provided products with products hierarchy' do
+    owner_key = random_string('test_owner')
+    owner = create_owner(owner_key)
+
+    provided = []
+
+    3.times do |i|
+      provided << create_upstream_product(random_string("provided-#{i}"))
+    end
+    product = create_upstream_product(random_string('test_prod'), :providedProducts => provided[0..1])
+    sub = create_upstream_subscription(random_string('test_sub'), owner_key, product.id, {
+        :provided_products => provided[0..1]
     })
 
     @cp.refresh_pools(owner_key)
@@ -85,6 +122,7 @@ describe 'Refresh Pools' do
 
     # Remove the old provided products and add a new one...
     sub.providedProducts = [provided[2]]
+    update_upstream_product(product.id, :provided_products => provided[2])
     update_upstream_subscription(sub.id, sub)
 
     @cp.refresh_pools(owner_key)
@@ -230,14 +268,14 @@ describe 'Refresh Pools' do
       }
     })
 
+    derived_eng_product = create_upstream_product(random_string(nil, true))
+
     derived_product = create_upstream_product(random_string('derived_prod'), {
       :attributes => {
         :cores => 2,
         :sockets=>4
-      }
+      }, :providedProducts => [derived_eng_product]
     })
-
-    derived_eng_product = create_upstream_product(random_string(nil, true))
 
     eng_product = create_upstream_product(random_string('eng_prod'))
 
@@ -263,10 +301,10 @@ describe 'Refresh Pools' do
       :derived_product => nil,
       :derived_provided_products => []
     })
-
     @cp.refresh_pools(owner_key)
 
     pools = @cp.list_pools :owner => owner.id, :product => datacenter_product.id
+
     expect(pools.length).to eq(2)
 
     # Swap pools if necessary
@@ -524,11 +562,6 @@ describe 'Refresh Pools' do
     owner_key = random_string('test_owner')
     owner = create_owner(owner_key)
 
-    sku_id1 = random_string('required_prod', true)
-    sku_id2 = random_string('dependent_prod', true)
-    sku_prod1 = create_upstream_product(sku_id1)
-    sku_prod2 = create_upstream_product(sku_id2)
-
     eng_id1 = random_string(nil, true)
     eng_id2 = random_string(nil, true)
     eng_prod1 = create_upstream_product(eng_id1)
@@ -546,6 +579,11 @@ describe 'Refresh Pools' do
     add_content_to_product_upstream(eng_id1, content_id1)
     add_content_to_product_upstream(eng_id2, content_id2)
     add_content_to_product_upstream(eng_id2, content_id3)
+
+    sku_id1 = random_string('required_prod', true)
+    sku_id2 = random_string('dependent_prod', true)
+    sku_prod1 = create_upstream_product(sku_id1, {:providedProducts => [eng_prod1]})
+    sku_prod2 = create_upstream_product(sku_id2, {:providedProducts => [eng_prod2]} )
 
     sub_id1 = random_string('test_subscription_1')
     sub1 = create_upstream_subscription(sub_id1, owner_key, sku_id1, { :provided_products => [eng_prod1] })
@@ -942,6 +980,68 @@ describe 'Refresh Pools' do
     owner_key = random_string('test_owner')
     owner = create_owner(owner_key)
 
+    prov_product = create_upstream_product(random_string(nil, true), {
+        :name => random_string('prov_prod', true),
+        :attributes => {
+            :version => '6.4',
+            :arch => 'i386, x86_64',
+            :sockets => 4,
+            :cores => 8,
+            :ram => 16,
+            :warning_period => 15,
+            :management_enabled => true,
+            :stacking_id => '8888',
+            :virt_only => 'false',
+            :support_level => 'standard',
+            :support_type => 'excellent'
+        }
+    })
+
+    der_prov_product = create_upstream_product(random_string(nil, true), {
+        :name => random_string('der_prov_prod', true),
+        :attributes => {
+            :version => '6.4',
+            :arch => 'i386, x86_64',
+            :sockets => 4,
+            :cores => 8,
+            :ram => 16,
+            :warning_period => 15,
+            :management_enabled => true,
+            :stacking_id => '8888',
+            :virt_only => 'false',
+            :support_level => 'standard',
+            :support_type => 'excellent'
+        }
+    })
+
+    content_id1 = random_string('test_content_1')
+    content1 = create_upstream_content(content_id1, {
+        :gpg_url => 'gpg_url',
+        :content_url => '/content/dist/rhel/$releasever/$basearch/os',
+        :metadata_expire => 6400,
+        :required_tags => 'TAG1,TAG2'
+    })
+
+    content_id2 = random_string('test_content_2')
+    content2 = create_upstream_content(content_id2, {
+        :gpg_url => 'gpg_url',
+        :content_url => '/content/dist/rhel/$releasever/$basearch/os',
+        :metadata_expire => 6400,
+        :required_tags => 'TAG1,TAG2'
+    })
+
+    content_id3 = random_string('test_content_3')
+    content3 = create_upstream_content(content_id3, {
+        :gpg_url => 'gpg_url',
+        :content_url => '/content/dist/rhel/$releasever/$basearch/os',
+        :metadata_expire => 6400,
+        :required_tags => 'TAG1,TAG2'
+    })
+
+
+    add_content_to_product_upstream(prov_product.id, content_id2, false)
+    add_content_to_product_upstream(der_prov_product.id, content_id3, false)
+
     product = create_upstream_product(random_string(nil, true), {
       :name => random_string('prod', true),
       :attributes => {
@@ -958,78 +1058,18 @@ describe 'Refresh Pools' do
         :virt_only => 'false',
         :support_level => 'standard',
         :support_type => 'excellent'
-      }
+      }, :providedProducts => [prov_product]
     })
 
-    prov_product = create_upstream_product(random_string(nil, true), {
-      :name => random_string('prov_prod', true),
-      :attributes => {
-        :version => '6.4',
-        :arch => 'i386, x86_64',
-        :sockets => 4,
-        :cores => 8,
-        :ram => 16,
-        :warning_period => 15,
-        :management_enabled => true,
-        :stacking_id => '8888',
-        :virt_only => 'false',
-        :support_level => 'standard',
-        :support_type => 'excellent'
-      }
-    })
+    add_content_to_product_upstream(product.id, content_id1, false)
 
     der_product = create_upstream_product(random_string(nil, true), {
       :name => random_string('der_prod', true),
       :attributes => {
         :cores => 2,
         :sockets => 4
-      }
+      }, :providedProducts => [der_prov_product]
     })
-
-    der_prov_product = create_upstream_product(random_string(nil, true), {
-      :name => random_string('der_prov_prod', true),
-      :attributes => {
-        :version => '6.4',
-        :arch => 'i386, x86_64',
-        :sockets => 4,
-        :cores => 8,
-        :ram => 16,
-        :warning_period => 15,
-        :management_enabled => true,
-        :stacking_id => '8888',
-        :virt_only => 'false',
-        :support_level => 'standard',
-        :support_type => 'excellent'
-      }
-    })
-
-    content_id1 = random_string('test_content_1')
-    content1 = create_upstream_content(content_id1, {
-      :gpg_url => 'gpg_url',
-      :content_url => '/content/dist/rhel/$releasever/$basearch/os',
-      :metadata_expire => 6400,
-      :required_tags => 'TAG1,TAG2'
-    })
-
-    content_id2 = random_string('test_content_2')
-    content2 = create_upstream_content(content_id2, {
-      :gpg_url => 'gpg_url',
-      :content_url => '/content/dist/rhel/$releasever/$basearch/os',
-      :metadata_expire => 6400,
-      :required_tags => 'TAG1,TAG2'
-    })
-
-    content_id3 = random_string('test_content_3')
-    content3 = create_upstream_content(content_id3, {
-      :gpg_url => 'gpg_url',
-      :content_url => '/content/dist/rhel/$releasever/$basearch/os',
-      :metadata_expire => 6400,
-      :required_tags => 'TAG1,TAG2'
-    })
-
-    add_content_to_product_upstream(product.id, content_id1, false)
-    add_content_to_product_upstream(prov_product.id, content_id2, false)
-    add_content_to_product_upstream(der_prov_product.id, content_id3, false)
 
     sub_id = random_string('test_subscription_1')
     sub = create_upstream_subscription(sub_id, owner_key, product.id, {
@@ -1117,7 +1157,6 @@ describe 'Refresh Pools' do
       content = subscription['providedProducts'][0]['productContent'][0]['content']
       content.modifiedProductIds = [product_id2]
       update_upstream_content(content.id, content)
-
       subscription
     }
   end
@@ -1126,7 +1165,6 @@ describe 'Refresh Pools' do
     test_entitlement_regeneration { |owner, subscription|
       product_id2 = random_string(nil, true)
       product2 = create_upstream_product(product_id2, { :name => 'test_prod_2' })
-
       content = subscription['derivedProvidedProducts'][0]['productContent'][0]['content']
       content.modifiedProductIds = [product_id2]
       update_upstream_content(content.id, content)

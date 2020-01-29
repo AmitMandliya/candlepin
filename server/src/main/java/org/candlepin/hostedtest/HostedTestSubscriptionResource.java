@@ -35,8 +35,10 @@ import com.google.inject.persist.Transactional;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
@@ -128,6 +130,32 @@ public class HostedTestSubscriptionResource {
                 this.adapter.createProduct(product);
             }
         }
+
+        if (subscription.getProduct() != null && subscription.getProvidedProducts() != null) {
+            ProductData mktProduct = (ProductData) this.adapter.getProduct(subscription.getProduct().getId());
+            Set<ProductData> provided = new HashSet<>();
+
+            for (ProductInfo providedProduct : subscription.getProvidedProducts()) {
+                provided.add((ProductData) this.adapter.getProduct(providedProduct.getId()));
+            }
+
+            mktProduct.setProvidedProducts(provided);
+            this.adapter.productMap.put(mktProduct.getId(), mktProduct);
+        }
+
+        if (subscription.getDerivedProduct() != null && subscription.getDerivedProvidedProducts() != null) {
+            ProductData derivedProduct =
+                (ProductData) this.adapter.getProduct(subscription.getDerivedProduct().getId());
+            Set<ProductData> provided = new HashSet<>();
+
+            for (ProductInfo providedProduct : subscription.getDerivedProvidedProducts()) {
+                provided.add((ProductData) this.adapter.getProduct(providedProduct.getId()));
+            }
+
+            derivedProduct.setProvidedProducts(provided);
+            this.adapter.productMap.put(derivedProduct.getId(), derivedProduct);
+        }
+
     }
 
     private void addProductsToMap(ProductData product, Map<String, ProductData> pmap) {

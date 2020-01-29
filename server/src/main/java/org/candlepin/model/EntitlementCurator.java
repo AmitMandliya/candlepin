@@ -962,18 +962,20 @@ public class EntitlementCurator extends AbstractHibernateCurator<Entitlement> {
         String queryStr = "SELECT DISTINCT e2.id " +
             // Required entitlement
             "FROM cp_entitlement e1 " +
+            "JOIN cp_pool pl1 on pl1.id = e1.pool_id " +
             // Required entitlement => required pool
-            "JOIN cp2_pool_provided_products ppp1 ON ppp1.pool_id = e1.pool_id " +
-            // Required pool => required product
-            "JOIN cp2_products p ON p.uuid = ppp1.product_uuid " +
+            "JOIN cp2_product_provided_products ppp1 ON ppp1.product_uuid = pl1.product_uuid " +
+            "JOIN cp2_products p ON p.uuid = ppp1.provided_product_uuid "+
             // Required product => conditional content
             "JOIN cp2_content_modified_products cmp ON cmp.element = p.product_id " +
             // Conditional content => dependent product
             "JOIN cp2_product_content pc ON pc.content_uuid = cmp.content_uuid " +
             // Dependent product => dependent pool
-            "JOIN cp2_pool_provided_products ppp2 ON ppp2.product_uuid = pc.product_uuid " +
-            // Dependent pool => dependent entitlement
-            "JOIN cp_entitlement e2 ON e2.pool_id = ppp2.pool_id " +
+            "JOIN cp2_product_provided_products ppp2 ON ppp2.provided_product_uuid = pc.product_uuid " +
+            "JOIN cp_pool pl2 on pl2.product_uuid = ppp2.product_uuid "+
+
+                // Dependent pool => dependent entitlement
+            "JOIN cp_entitlement e2 ON e2.pool_id = pl2.id " +
             "WHERE e1.consumer_id = e2.consumer_id " +
             "  AND e1.id != e2.id " +
             "  AND e2.dirty = false " +
@@ -1006,18 +1008,20 @@ public class EntitlementCurator extends AbstractHibernateCurator<Entitlement> {
         String queryStr = "SELECT DISTINCT e2.id " +
             // Required entitlement
             "FROM cp_entitlement e1 " +
+            "JOIN cp_pool pl1 on pl1.id = e1.pool_id " +
             // Required entitlement => required pool
-            "JOIN cp2_pool_derprov_products ppp1 ON ppp1.pool_id = e1.pool_id " +
-            // Required pool => required product
-            "JOIN cp2_products p ON p.uuid = ppp1.product_uuid " +
+            "JOIN cp2_product_provided_products ppp1 ON ppp1.product_uuid = pl1.derived_product_uuid " +
+            "JOIN cp2_products p ON p.uuid = ppp1.provided_product_uuid "+
             // Required product => conditional content
             "JOIN cp2_content_modified_products cmp ON cmp.element = p.product_id " +
             // Conditional content => dependent product
             "JOIN cp2_product_content pc ON pc.content_uuid = cmp.content_uuid " +
             // Dependent product => dependent pool
-            "JOIN cp2_pool_provided_products ppp2 ON ppp2.product_uuid = pc.product_uuid " +
+            "JOIN cp2_product_provided_products ppp2 ON ppp2.provided_product_uuid = pc.product_uuid " +
+
+            "JOIN cp_pool pl2 on pl2.derived_product_uuid = ppp2.product_uuid "+
             // Dependent pool => dependent entitlement
-            "JOIN cp_entitlement e2 ON e2.pool_id = ppp2.pool_id " +
+            "JOIN cp_entitlement e2 ON e2.pool_id = pl2.id " +
             "WHERE e1.consumer_id = e2.consumer_id " +
             "  AND e1.id != e2.id " +
             "  AND e2.dirty = false " +
@@ -1065,19 +1069,23 @@ public class EntitlementCurator extends AbstractHibernateCurator<Entitlement> {
             // CriteriaBuilder.
             String querySql = "SELECT DISTINCT e.id " +
                 // Required pool
-                "FROM cp2_pool_provided_products ppp1 " +
+                "FROM cp2_product_provided_products ppp1 " +
+
+                "JOIN cp_pool pl1 on pl1.product_uuid = ppp1.product_uuid " +
                 // Required pool => required product
-                "JOIN cp2_products p ON p.uuid = ppp1.product_uuid " +
+                "JOIN cp2_products p ON p.uuid = ppp1.provided_product_uuid " +
                 // Required product => conditional content
                 "JOIN cp2_content_modified_products cmp ON cmp.element = p.product_id " +
                 // Conditional content => dependent product
                 "JOIN cp2_product_content pc ON pc.content_uuid = cmp.content_uuid " +
                 // Dependent product => dependent pool
-                "JOIN cp2_pool_provided_products ppp2 ON ppp2.product_uuid = pc.product_uuid " +
+                "JOIN cp2_product_provided_products ppp2 ON ppp2.provided_product_uuid = pc.product_uuid " +
+                "JOIN cp_pool pl2 on pl2.product_uuid = ppp2.product_uuid " +
                 // Dependent pool => dependent entitlement
-                "JOIN cp_entitlement e ON e.pool_id = ppp2.pool_id " +
+                "JOIN cp_entitlement e ON e.pool_id = pl2.id " +
+
                 "WHERE e.consumer_id = :consumer_id " +
-                "  AND ppp1.pool_id IN (:pool_ids) ";
+                "  AND pl1.id IN (:pool_ids) ";
 
 
             int blockSize = Math.min(this.getInBlockSize(), this.getQueryParameterLimit() - 1);
@@ -1095,19 +1103,21 @@ public class EntitlementCurator extends AbstractHibernateCurator<Entitlement> {
             if (ctype.isManifest()) {
                 querySql = "SELECT DISTINCT e.id " +
                     // Required pool
-                    "FROM cp2_pool_derprov_products ppp1 " +
+                    "FROM cp2_product_provided_products ppp1 " +
+                    "JOIN cp_pool pl1 on pl1.derived_product_uuid = ppp1.product_uuid " +
                     // Required pool => required product
-                    "JOIN cp2_products p ON p.uuid = ppp1.product_uuid " +
+                    "JOIN cp2_products p ON p.uuid = ppp1.provided_product_uuid " +
                     // Required product => conditional content
                     "JOIN cp2_content_modified_products cmp ON cmp.element = p.product_id " +
                     // Conditional content => dependent product
                     "JOIN cp2_product_content pc ON pc.content_uuid = cmp.content_uuid " +
                     // Dependent product => dependent pool
-                    "JOIN cp2_pool_provided_products ppp2 ON ppp2.product_uuid = pc.product_uuid " +
+                    "JOIN cp2_product_provided_products ppp2 ON ppp2.provided_product_uuid = pc.product_uuid " +
+                    "JOIN cp_pool pl2 on pl2.derived_product_uuid = ppp2.product_uuid "+
                     // Dependent pool => dependent entitlement
-                    "JOIN cp_entitlement e ON e.pool_id = ppp2.pool_id " +
+                    "JOIN cp_entitlement e ON e.pool_id = pl2.id " +
                     "WHERE e.consumer_id = :consumer_id " +
-                    "  AND ppp1.pool_id IN (:pool_ids) ";
+                    "  AND pl1.id IN (:pool_ids) ";
 
                 query = getEntityManager().createNativeQuery(querySql)
                     .setParameter("consumer_id", consumer.getId());

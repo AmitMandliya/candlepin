@@ -226,9 +226,9 @@ public class PoolRulesStackDerivedTest {
         Pool pool = TestUtil.copyFromSub(sub);
         pool.setId("" + lastPoolId++);
         when(productCurator.getPoolProvidedProductsCached(pool))
-            .thenReturn(pool.getProvidedProducts());
+            .thenReturn((Set<Product>) pool.getProduct().getProvidedProducts());
         when(productCurator.getPoolDerivedProvidedProductsCached(pool))
-            .thenReturn(pool.getDerivedProvidedProducts());
+            .thenReturn((Set<Product>) pool.getProduct().getProvidedProducts());
         return pool;
     }
 
@@ -276,9 +276,9 @@ public class PoolRulesStackDerivedTest {
 
     @Test
     public void initialProvidedProducts() {
-        assertEquals(1, stackDerivedPool.getProvidedProducts().size());
+        assertEquals(1, stackDerivedPool.getProduct().getProvidedProducts().size());
         assertEquals(provided2.getUuid(),
-            stackDerivedPool.getProvidedProducts().iterator().next().getUuid());
+            stackDerivedPool.getProduct().getProvidedProducts().iterator().next().getUuid());
     }
 
     @Test
@@ -320,18 +320,6 @@ public class PoolRulesStackDerivedTest {
 
         assertTrue(update.getProductAttributesChanged());
         assertEquals(pool1.getProductAttributes(), stackDerivedPool.getProductAttributes());
-    }
-
-    @Test
-    public void mergedProvidedProducts() {
-        stackedEnts.add(createEntFromPool(pool1));
-        stackedEnts.add(createEntFromPool(pool3));
-        PoolUpdate update = poolRules.updatePoolFromStack(stackDerivedPool, null);
-        assertTrue(update.getProductsChanged());
-        assertEquals(3, stackDerivedPool.getProvidedProducts().size());
-        assertTrue(stackDerivedPool.getProvidedProducts().contains(provided1));
-        assertTrue(stackDerivedPool.getProvidedProducts().contains(provided2));
-        assertTrue(stackDerivedPool.getProvidedProducts().contains(provided3));
     }
 
     @Test

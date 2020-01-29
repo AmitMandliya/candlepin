@@ -124,9 +124,17 @@ public class HostedTestSubscriptionServiceAdapter implements SubscriptionService
         sdata.setOwner(this.resolveOwner(sinfo.getOwner()));
 
         sdata.setProduct(this.resolveProduct(sinfo.getProduct()));
-        sdata.setProvidedProducts(this.resolveProducts(sinfo.getProvidedProducts()));
+
+        if (sdata.getProduct() != null) {
+            sdata.setProvidedProducts(sdata.getProduct().getProvidedProducts());
+        }
+
         sdata.setDerivedProduct(this.resolveProduct(sinfo.getDerivedProduct()));
-        sdata.setDerivedProvidedProducts(this.resolveProducts(sinfo.getDerivedProvidedProducts()));
+
+        if (sdata.getDerivedProduct() != null) {
+            sdata.setDerivedProvidedProducts(
+                sdata.getDerivedProduct().getProvidedProducts());
+        }
 
         sdata.setQuantity(sinfo.getQuantity());
         sdata.setStartDate(sinfo.getStartDate());
@@ -169,24 +177,34 @@ public class HostedTestSubscriptionServiceAdapter implements SubscriptionService
 
         // Do product resolution here
         ProductData product = this.resolveProduct(sinfo.getProduct());
-        Collection<ProductData> providedProducts = this.resolveProducts(sinfo.getProvidedProducts());
-
-        ProductData dProduct = this.resolveProduct(sinfo.getDerivedProduct());
-        Collection<ProductData> dpProvidedProducts = this.resolveProducts(sinfo.getDerivedProvidedProducts());
 
         // If they all resolved, set the products
         if (product != null) {
             sdata.setProduct(product);
+            Collection<ProductData> providedProducts =
+                this.resolveProducts(product.getProvidedProducts());
+
+            if (providedProducts != null) {
+                sdata.setProvidedProducts(providedProducts);
+            }
+        }
+        else {
+            sdata.setProvidedProducts(null);
         }
 
-        if (providedProducts != null) {
-            sdata.setProvidedProducts(providedProducts);
-        }
-
+        ProductData dProduct = this.resolveProduct(sinfo.getDerivedProduct());
         sdata.setDerivedProduct(dProduct);
 
-        if (dpProvidedProducts != null) {
-            sdata.setDerivedProvidedProducts(dpProvidedProducts);
+        if (dProduct != null) {
+            Collection<ProductData> dpProvidedProducts =
+                this.resolveProducts(dProduct.getProvidedProducts());
+
+            if (dpProvidedProducts != null) {
+                sdata.setDerivedProvidedProducts(dpProvidedProducts);
+            }
+        }
+        else {
+            sdata.setDerivedProvidedProducts(null);
         }
 
         // Set the other "safe" properties here...
@@ -342,6 +360,10 @@ public class HostedTestSubscriptionServiceAdapter implements SubscriptionService
 
         if (pinfo.getBranding() != null) {
             pdata.setBranding(this.resolveBranding(pinfo.getBranding()));
+        }
+
+        if (pinfo.getProvidedProducts() != null) {
+            pdata.setProvidedProducts(this.resolveProducts(pinfo.getProvidedProducts()));
         }
 
         // Update product=>content mappings
@@ -601,24 +623,24 @@ public class HostedTestSubscriptionServiceAdapter implements SubscriptionService
 
         if (sdata.getProduct() != null && sdata.getProduct().getId() != null) {
             pids.add(sdata.getProduct().getId());
-        }
 
-        if (sdata.getProvidedProducts() != null) {
-            for (ProductData pdata : sdata.getProvidedProducts()) {
-                if (pdata != null && pdata.getId() != null) {
-                    pids.add(pdata.getId());
+            if (sdata.getProduct().getProvidedProducts() != null) {
+                for (ProductData pdata : sdata.getProduct().getProvidedProducts()) {
+                    if (pdata != null && pdata.getId() != null) {
+                        pids.add(pdata.getId());
+                    }
                 }
             }
         }
 
         if (sdata.getDerivedProduct() != null && sdata.getDerivedProduct().getId() != null) {
             pids.add(sdata.getDerivedProduct().getId());
-        }
 
-        if (sdata.getDerivedProvidedProducts() != null) {
-            for (ProductData pdata : sdata.getDerivedProvidedProducts()) {
-                if (pdata != null && pdata.getId() != null) {
-                    pids.add(pdata.getId());
+            if (sdata.getDerivedProduct().getProvidedProducts() != null) {
+                for (ProductData pdata : sdata.getDerivedProduct().getProvidedProducts()) {
+                    if (pdata != null && pdata.getId() != null) {
+                        pids.add(pdata.getId());
+                    }
                 }
             }
         }

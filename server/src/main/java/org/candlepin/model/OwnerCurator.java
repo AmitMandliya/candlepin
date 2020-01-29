@@ -213,8 +213,8 @@ public class OwnerCurator extends AbstractHibernateCurator<Owner> {
                 .createAlias("Owner.pools", "Pool")
                 .createAlias("Pool.product", "Prod", JoinType.LEFT_OUTER_JOIN)
                 .createAlias("Pool.derivedProduct", "DProd", JoinType.LEFT_OUTER_JOIN)
-                .createAlias("Pool.providedProducts", "PProd", JoinType.LEFT_OUTER_JOIN)
-                .createAlias("Pool.derivedProvidedProducts", "DPProd", JoinType.LEFT_OUTER_JOIN)
+                .createAlias("Prod.providedProducts", "PProd", JoinType.LEFT_OUTER_JOIN)
+                .createAlias("DProd.providedProducts", "DPProd", JoinType.LEFT_OUTER_JOIN)
                 .add(Restrictions.or(
                     CPRestrictions.in("Prod.id", productIds),
                     CPRestrictions.in("DProd.id", productIds),
