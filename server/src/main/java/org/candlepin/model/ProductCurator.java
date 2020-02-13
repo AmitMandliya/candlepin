@@ -251,12 +251,12 @@ public class ProductCurator extends AbstractHibernateCurator<Product> {
 
             String ppSql =
                 "SELECT po.id, pp.provided_product_uuid FROM cp2_product_provided_products pp " +
-                "JOIN cp_pool po on po.product_uuid = pp.product_uuid "+
+                "JOIN cp_pool po on po.product_uuid = pp.product_uuid " +
                 "WHERE po.id IN (:poolIds)";
 
             String dpSql =
                 "SELECT po.id, pp.provided_product_uuid FROM cp2_product_provided_products pp " +
-                "JOIN cp_pool po on po.derived_product_uuid = pp.product_uuid "+
+                "JOIN cp_pool po on po.derived_product_uuid = pp.product_uuid " +
                 "WHERE po.id IN (:poolIds)";
 
             Query ppUuidQuery = entityManager.createNativeQuery(ppSql);
