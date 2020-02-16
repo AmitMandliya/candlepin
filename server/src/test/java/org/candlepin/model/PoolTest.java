@@ -29,9 +29,11 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -40,7 +42,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+
 import javax.inject.Inject;
+import javax.persistence.PersistenceException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -253,13 +257,14 @@ public class PoolTest extends DatabaseTestFixture {
 
     @Test
     public void testLookupPoolsProvidingProduct() {
-        Product parentProduct = this.createProduct("1", "product-1", owner);
+
         Product childProduct = this.createProduct("2", "product-2", owner);
 
-        Set<Product> providedProducts = new HashSet<>();
-        providedProducts.add(childProduct);
+        Product parentProduct = TestUtil.createProduct("1", "product-1");
+        parentProduct.setProvidedProducts(Arrays.asList(childProduct));
 
-        Pool pool = TestUtil.createPool(owner, parentProduct, providedProducts, 5);
+        parentProduct = this.createProduct(parentProduct, owner);
+        Pool pool = TestUtil.createPool(owner, parentProduct, 5);
         poolCurator.create(pool);
 
 
@@ -325,29 +330,23 @@ public class PoolTest extends DatabaseTestFixture {
     }
 
     @Test
-    public void providedProductCleanup() {
-        Product parentProduct = this.createProduct("1", "product-1", owner);
-        Product childProduct1 = this.createProduct("child1", "child1", owner);
-        Product childProduct2 = this.createProduct("child2", "child2", owner);
-        Product childProduct3 = this.createProduct("child3", "child3", owner);
+    public void testProvidedProductImmutability() {
+        Product parentProduct = TestUtil.createProduct("1", "product-1");
         Product providedProduct = this.createProduct("provided", "Child 1", owner);
+        parentProduct.setProvidedProducts(Arrays.asList(providedProduct));
 
-        Set<Product> providedProducts = new HashSet<>();
-        providedProducts.add(providedProduct);
+        Product childProduct1 = this.createProduct("child1", "child1", owner);
 
-        Pool pool = TestUtil.createPool(owner, parentProduct, providedProducts, 5);
+        parentProduct = this.createProduct(parentProduct, owner);
+        Pool pool = TestUtil.createPool(owner, parentProduct, 5);
         poolCurator.create(pool);
         pool = poolCurator.get(pool.getId());
-        assertEquals(1, pool.getProvidedProducts().size());
+        assertEquals(1, pool.getProduct().getProvidedProducts().size());
 
-        // Clear the set and create a new one:
-        pool.getProvidedProducts().clear();
-        pool.addProvidedProduct(childProduct2);
-        pool.addProvidedProduct(childProduct3);
-        poolCurator.merge(pool);
-
-        pool = poolCurator.get(pool.getId());
-        assertEquals(2, pool.getProvidedProducts().size());
+        // provided products are immutable set.
+        pool.getProduct().addProvidedProduct(childProduct1);
+        Pool finalPool = pool;
+        Assertions.assertThrows(PersistenceException.class, () ->poolCurator.merge(finalPool));
     }
 
     // sunny test - real rules not invoked here. Can only be sure the counts are recorded.

@@ -446,15 +446,10 @@ public class TestUtil {
 
         String random = String.valueOf(randomInt());
 
-        Set<Product> provided = new HashSet<>();
-        if (providedProducts != null) {
-            provided.addAll(providedProducts);
-        }
-
         Pool pool = new Pool(
             owner,
             product,
-            provided,
+            new HashSet<>(),
             Long.valueOf(quantity),
             TestUtil.createDate(2009, 11, 30),
             TestUtil.createDate(Calendar.getInstance().get(Calendar.YEAR) + 10, 11, 30),
