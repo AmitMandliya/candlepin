@@ -25,6 +25,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.sql.SQLIntegrityConstraintViolationException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
@@ -1259,16 +1260,24 @@ public class EntitlementCuratorTest extends DatabaseTestFixture {
         Consumer distributor = this.createDistributor(owner);
 
         List<Product> requiredProducts = this.createProducts(owner, 3, "test_req_prod");
-        List<Product> providedProducts = this.createProducts(owner, 3, "test_prov_prod");
+
+        Product p1 = TestUtil.createProduct("p1", "p1");
+        p1.setProvidedProducts(Arrays.asList(requiredProducts.get(0)));
+
+        p1 = this.createProduct(p1, owner);
+        Product p2 = this.createProduct("p2", "p2", owner);
+        Product p3 = this.createProduct("p3", "p3", owner);
+
+        List<Product> providedProducts = new ArrayList<>();
+        providedProducts.addAll(Arrays.asList(p1, p2, p3));
         List<Product> dependentProducts = this.createDependentProducts(owner, 1, "test_dep_prod_a",
             requiredProducts);
 
         Pool requiredPool = this.createPoolWithProducts(owner, "reqPool1", providedProducts);
-        Product derivedProduct =
-            providedProducts.get(0).setProvidedProducts(Arrays.asList(requiredProducts.get(0)));
+        requiredPool.setDerivedProduct(p1);
 
-        requiredPool.setDerivedProduct(derivedProduct);
-        Pool test = this.poolCurator.merge(requiredPool);
+
+        this.poolCurator.merge(requiredPool);
 
         Pool dependentPool = this.createPoolWithProducts(owner, "depPool1", dependentProducts);
 

@@ -125,7 +125,7 @@ public class EntitlementCurator extends AbstractHibernateCurator<Entitlement> {
 
             if (values != null && !values.isEmpty()) {
                 if (!joinedProvided) {
-                    criteria.createAlias("Pool.providedProducts", "Provided", JoinType.LEFT_OUTER_JOIN);
+                    criteria.createAlias("Product.providedProducts", "Provided", JoinType.LEFT_OUTER_JOIN);
                     joinedProvided = true;
                 }
 
@@ -148,7 +148,7 @@ public class EntitlementCurator extends AbstractHibernateCurator<Entitlement> {
             if (values != null && !values.isEmpty()) {
                 if (!joinedProvided) {
                     // This was an inner join -- might end up being important later
-                    criteria.createAlias("Pool.providedProducts", "Provided", JoinType.LEFT_OUTER_JOIN);
+                    criteria.createAlias("Product.providedProducts", "Provided", JoinType.LEFT_OUTER_JOIN);
                     joinedProvided = true;
                 }
 
@@ -1018,8 +1018,7 @@ public class EntitlementCurator extends AbstractHibernateCurator<Entitlement> {
             "JOIN cp2_product_content pc ON pc.content_uuid = cmp.content_uuid " +
             // Dependent product => dependent pool
             "JOIN cp2_product_provided_products ppp2 ON ppp2.provided_product_uuid = pc.product_uuid " +
-
-            "JOIN cp_pool pl2 on pl2.derived_product_uuid = ppp2.product_uuid " +
+            "JOIN cp_pool pl2 on pl2.product_uuid = ppp2.product_uuid " +
             // Dependent pool => dependent entitlement
             "JOIN cp_entitlement e2 ON e2.pool_id = pl2.id " +
             "WHERE e1.consumer_id = e2.consumer_id " +
@@ -1040,6 +1039,7 @@ public class EntitlementCurator extends AbstractHibernateCurator<Entitlement> {
         }
         return result;
     }
+
 
     /**
      * Fetches dependent entitlement IDs for the specified collection of pools, belonging to the
@@ -1114,7 +1114,7 @@ public class EntitlementCurator extends AbstractHibernateCurator<Entitlement> {
                     // Dependent product => dependent pool
                     "JOIN cp2_product_provided_products ppp2 " +
                     "ON ppp2.provided_product_uuid = pc.product_uuid " +
-                    "JOIN cp_pool pl2 on pl2.derived_product_uuid = ppp2.product_uuid " +
+                    "JOIN cp_pool pl2 on pl2.product_uuid = ppp2.product_uuid " +
                     // Dependent pool => dependent entitlement
                     "JOIN cp_entitlement e ON e.pool_id = pl2.id " +
                     "WHERE e.consumer_id = :consumer_id " +
@@ -1132,5 +1132,4 @@ public class EntitlementCurator extends AbstractHibernateCurator<Entitlement> {
 
         return entitlementIds;
     }
-
 }

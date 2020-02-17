@@ -164,7 +164,8 @@ public class OwnerCurator extends AbstractHibernateCurator<Owner> {
     public CandlepinQuery<Owner> getOwnersByActiveProduct(Collection<String> productIds) {
         // NOTE: only used by superadmin API calls, no permissions filtering needed here.
         DetachedCriteria poolIdQuery = DetachedCriteria.forClass(Pool.class, "pool")
-            .createAlias("pool.providedProducts", "providedProducts")
+            .createAlias("pool.product", "products")
+            .createAlias("products.providedProducts", "providedProducts")
             .add(CPRestrictions.in("providedProducts.id", productIds))
             .setProjection(Property.forName("pool.id"));
 

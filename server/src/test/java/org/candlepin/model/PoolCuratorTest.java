@@ -1545,15 +1545,21 @@ public class PoolCuratorTest extends DatabaseTestFixture {
         this.ownerCurator.create(owner1);
         this.ownerCurator.create(owner2);
 
-        Pool p1 = TestUtil.createPool(owner1, this.generateProduct(owner1, "p1", "p1"));
-        p1.setDerivedProduct(this.generateProduct(owner1, "dp1", "dp1"));
-        p1.setProvidedProducts(this.generateProductCollection(owner1, "pp-a-", 3));
-        p1.setDerivedProvidedProducts(this.generateProductCollection(owner1, "dpp-a-", 3));
+        Product product1 = this.generateProduct(owner1, "p1", "p1");
+        product1.setProvidedProducts(this.generateProductCollection(owner1, "pp-a-", 3));
+        Product dproduct1 = this.generateProduct(owner1, "dp1", "dp1");
+        dproduct1.setProvidedProducts(this.generateProductCollection(owner1, "dpp-a-", 3));
 
-        Pool p2 = TestUtil.createPool(owner2, this.generateProduct(owner2, "p2", "p2"));
-        p2.setDerivedProduct(this.generateProduct(owner2, "dp2", "dp2"));
-        p2.setProvidedProducts(this.generateProductCollection(owner2, "pp-b-", 3));
-        p2.setDerivedProvidedProducts(this.generateProductCollection(owner2, "dpp-b-", 3));
+        Pool p1 = TestUtil.createPool(owner1, product1);
+        p1.setDerivedProduct(dproduct1);
+
+        Product product2 = this.generateProduct(owner2, "p2", "p2");
+        product2.setProvidedProducts(this.generateProductCollection(owner2, "pp-b-", 3));
+        Product dProduct2 = this.generateProduct(owner2, "dp2", "dp2");
+        dProduct2.setProvidedProducts(this.generateProductCollection(owner2, "dpp-b-", 3));
+
+        Pool p2 = TestUtil.createPool(owner2, product2);
+        p2.setDerivedProduct(dProduct2);
 
         this.poolCurator.create(p1);
         this.poolCurator.create(p2);
